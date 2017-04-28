@@ -8,29 +8,34 @@ const url     = 'https://backend-challenge-fall-2017.herokuapp.com/'
 let availableCookies;
 let orders = [];
 
-return fetchOrders(1)
+fetchOrders(1)
 .then(() => {
+
   orders = _.flatten(orders);
-  let wCookies = _.filter(orders, order =>  {
+
+  //Get orders that have cookies and have yet to be fulfilled. Fulfill all others.
+  const wCookies = _.filter(orders, order =>  {
     let toAdd = _.some(order.products, {'title': 'Cookie'}) && !order.fulfilled;
     if (!toAdd && !order.fulfilled) { order.fulfilled = true; }
     return toAdd;
   })
 
-  let sorted = _.orderBy(wCookies, [order => {
+  //Sort products: prioritize larger amount of cookies & lower ids
+  const sorted = _.orderBy(wCookies, [order => {
     return _.find(order.products, {'title' : 'Cookie'}).amount;
   }, 'id'], ['desc', 'asc'])
 
-  let unfulfilledIds = _.map(sorted, order => {
+  //Fulfill orders while tracking available cookies and unfulfilled ids
+  const unfulfilledIds = _.map(sorted, order => {
     let amount = _.find(order.products, {'title' : 'Cookie'}).amount;
     if (amount > availableCookies) { return order.id; }
     availableCookies = availableCookies - amount;
     orders[order.id-1].fulfilled = true;
   }).filter(id => id);
 
-  let output = {
+  const output = {
     'remaining_cookies': availableCookies,
-    'unfulfilled_orders': unfulfilledIds
+    'unfulfilled_orders': _.sortBy(unfulfilledIds, id => id)
   }
   console.log(output);
 })
